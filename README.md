@@ -41,8 +41,9 @@ Telegram-каналы с арендой частично покрыты чере
 2. Откройте своего бота и отправьте ему любое сообщение.
 3. **Chat ID.** Запустите в папке проекта:
    ```bash
-   python -m watcher.get_chat_id <ТОКЕН>
+   python -m watcher.get_chat_id
    ```
+   Скрипт спросит токен (ввод скрыт) и выведет число: это chat ID.
 4. **Секреты в GitHub.** Репозиторий → Settings → Secrets and variables → Actions → New repository secret:
    - `TELEGRAM_BOT_TOKEN`: токен
    - `TELEGRAM_CHAT_ID`: число из шага 3

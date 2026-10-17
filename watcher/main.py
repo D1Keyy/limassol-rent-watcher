@@ -67,6 +67,11 @@ def run(dry_run: bool) -> int:
             log.error("TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set (or use --dry-run)")
             return 2
         tg = Telegram(token, chat)
+        # Fail before touching state, so nothing is marked as sent.
+        if err := tg.check():
+            log.error("Telegram rejects the bot token / chat id (%s). Check the "
+                      "TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID secrets.", err)
+            return 3
 
     to_send = []   # (listing, verdict, old_price)
     for name, module in SOURCES.items():
@@ -108,7 +113,12 @@ def run(dry_run: bool) -> int:
         if dry_run:
             print(text, "\n" + "-" * 40)
         else:
-            tg.send(text, preview_url=l.url)
+            if not tg.send(text, preview_url=l.url):
+                # Not delivered: forget it so the next run tries again.
+                if old is None:
+                    state["seen"].pop(l.key, None)
+                else:
+                    state["seen"][l.key]["price"] = old
             time.sleep(1.1)  # stay under Telegram's per-chat rate limit
 
     if not dry_run:

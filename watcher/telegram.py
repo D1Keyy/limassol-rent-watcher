@@ -63,6 +63,11 @@ class Telegram:
         self.api = f"https://api.telegram.org/bot{token}"
         self.chat_id = chat_id
 
+    def check(self) -> str | None:
+        """None if the token and chat id work, otherwise Telegram's error text."""
+        r = requests.post(f"{self.api}/getChat", json={"chat_id": self.chat_id}, timeout=30)
+        return None if r.ok else f"{r.status_code}: {r.json().get('description', r.text[:200])}"
+
     def send(self, text: str, preview_url: str | None = None) -> bool:
         payload = {
             "chat_id": self.chat_id,
