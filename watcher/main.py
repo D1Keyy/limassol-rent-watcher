@@ -6,6 +6,7 @@ Run:  python -m watcher.main            (needs TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT
 import argparse
 import json
 import logging
+import logging.handlers
 import os
 import sys
 import time
@@ -139,10 +140,25 @@ def run(dry_run: bool) -> int:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="print matches, send/save nothing")
+    ap.add_argument("--log-file", help="log here instead of the console (for scheduled runs)")
     args = ap.parse_args()
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    sys.stdout.reconfigure(encoding="utf-8")
-    sys.exit(run(args.dry_run))
+    fmt = "%(asctime)s %(levelname)s %(message)s"
+    if args.log_file:
+        path = ROOT / args.log_file
+        path.parent.mkdir(exist_ok=True)
+        handler = logging.handlers.RotatingFileHandler(path, maxBytes=1_000_000, backupCount=2,
+                                                       encoding="utf-8")
+        logging.basicConfig(level=logging.INFO, format=fmt, handlers=[handler])
+    else:
+        logging.basicConfig(level=logging.INFO, format=fmt)
+    if sys.stdout:  # None under pythonw.exe
+        sys.stdout.reconfigure(encoding="utf-8")
+    try:
+        code = run(args.dry_run)
+    except Exception:
+        log.exception("run failed")
+        code = 1
+    sys.exit(code)
 
 
 if __name__ == "__main__":

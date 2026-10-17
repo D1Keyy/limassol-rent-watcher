@@ -124,6 +124,8 @@ def evaluate(listing: Listing, cfg: dict) -> Verdict:
         flags.append("похоже, новостройка" if looks_new else "год постройки не указан")
 
     pv = pv_status(text)
+    if s.get("require_pv") and pv != "yes":
+        return Verdict(False, reason=f"no PV ({pv})")
     if listing.price <= s["base_max_price"]:
         tier = "base"
     elif listing.price <= s["pv_max_price"]:

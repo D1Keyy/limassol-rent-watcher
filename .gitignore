@@ -2,3 +2,6 @@ __pycache__/
 *.pyc
 .venv/
 .env
+logs/
+# local runs keep their own state; the Actions workflow adds it with -f
+state/

@@ -10,7 +10,11 @@ search:
   min_area_m2: 50           # listings without area are kept and flagged
   min_build_year: 2016      # "less than 10 years old"; unknown year is kept and flagged
 
-  # Two price tiers:
+  # Only send listings that clearly mention PV panels for electricity.
+  # false = also send everything up to base_max_price without PV.
+  require_pv: true
+
+  # Two price tiers (used when require_pv is false):
   #   up to base_max_price            -> any listing that passes the filters above
   #   base_max_price .. pv_max_price  -> only listings with photovoltaic (PV) panels
   #                                      for electricity (not just solar water heating)
@@ -19,7 +23,7 @@ search:
 
   # Listings in the PV tier where "solar panels" is mentioned but it's unclear
   # whether it's PV or a water heater: send them with a "check" mark.
-  send_unclear_solar: true
+  send_unclear_solar: false
 
 sources:
   bazaraki:
