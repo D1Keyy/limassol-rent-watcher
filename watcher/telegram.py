@@ -65,7 +65,9 @@ class Telegram:
 
     def check(self) -> str | None:
         """None if the token and chat id work, otherwise Telegram's error text."""
-        r = requests.post(f"{self.api}/getChat", json={"chat_id": self.chat_id}, timeout=30)
+        # getChat succeeds even for a bot's own id; a chat action needs a real recipient.
+        r = requests.post(f"{self.api}/sendChatAction",
+                          json={"chat_id": self.chat_id, "action": "typing"}, timeout=30)
         return None if r.ok else f"{r.status_code}: {r.json().get('description', r.text[:200])}"
 
     def send(self, text: str, preview_url: str | None = None) -> bool:

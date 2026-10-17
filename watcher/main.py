@@ -32,6 +32,16 @@ FAIL_ALERT_AFTER = 4      # consecutive failed runs of a source before alerting 
 log = logging.getLogger("watcher")
 
 
+def load_dotenv() -> None:
+    """Read KEY=VALUE lines from .env (for local runs; GitHub uses secrets)."""
+    env = ROOT / ".env"
+    if env.exists():
+        for line in env.read_text(encoding="utf-8-sig").splitlines():
+            key, sep, value = line.partition("=")
+            if sep and not key.strip().startswith("#"):
+                os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
+
+
 def load_state() -> dict:
     if STATE_FILE.exists():
         return json.loads(STATE_FILE.read_text(encoding="utf-8"))
@@ -62,6 +72,7 @@ def run(dry_run: bool) -> int:
 
     tg = None
     if not dry_run:
+        load_dotenv()
         token, chat = os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
         if not token or not chat:
             log.error("TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID must be set (or use --dry-run)")
@@ -114,11 +125,9 @@ def run(dry_run: bool) -> int:
             print(text, "\n" + "-" * 40)
         else:
             if not tg.send(text, preview_url=l.url):
-                # Not delivered: forget it so the next run tries again.
-                if old is None:
-                    state["seen"].pop(l.key, None)
-                else:
-                    state["seen"][l.key]["price"] = old
+                # Keep the previous state so the next run retries everything.
+                log.error("Telegram send failed; state not saved")
+                return 3
             time.sleep(1.1)  # stay under Telegram's per-chat rate limit
 
     if not dry_run:
