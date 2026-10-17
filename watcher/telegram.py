@@ -59,20 +59,39 @@ def format_message(l: Listing, v: Verdict, price_drop_from: float | None = None)
 
 
 class Telegram:
-    def __init__(self, token: str, chat_id: str):
+    def __init__(self, token: str, chat_ids: str):
+        """chat_ids: one id or several, comma-separated. The first one is the owner."""
         self.api = f"https://api.telegram.org/bot{token}"
-        self.chat_id = chat_id
+        self.chat_ids = [c.strip() for c in chat_ids.split(",") if c.strip()]
 
-    def check(self) -> str | None:
-        """None if the token and chat id work, otherwise Telegram's error text."""
+    def _ping(self, chat_id: str) -> str | None:
         # getChat succeeds even for a bot's own id; a chat action needs a real recipient.
         r = requests.post(f"{self.api}/sendChatAction",
-                          json={"chat_id": self.chat_id, "action": "typing"}, timeout=30)
+                          json={"chat_id": chat_id, "action": "typing"}, timeout=30)
         return None if r.ok else f"{r.status_code}: {r.json().get('description', r.text[:200])}"
 
+    def check(self) -> str | None:
+        """None if the token and owner's chat work, otherwise Telegram's error text.
+
+        Other recipients that fail (e.g. blocked the bot) are dropped for this run
+        instead of stopping it.
+        """
+        if err := self._ping(self.chat_ids[0]):
+            return err
+        for cid in self.chat_ids[1:]:
+            if err := self._ping(cid):
+                log.warning("skipping chat %s this run: %s", cid, err)
+                self.chat_ids.remove(cid)
+        return None
+
     def send(self, text: str, preview_url: str | None = None) -> bool:
+        """Send to every recipient; True if at least one got it."""
+        results = [self._send_one(cid, text, preview_url) for cid in self.chat_ids]
+        return any(results)
+
+    def _send_one(self, chat_id: str, text: str, preview_url: str | None) -> bool:
         payload = {
-            "chat_id": self.chat_id,
+            "chat_id": chat_id,
             "text": text,
             "parse_mode": "HTML",
             "link_preview_options": {"url": preview_url, "prefer_large_media": True,
