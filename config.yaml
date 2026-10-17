@@ -1,0 +1,43 @@
+# Rental watcher settings. Edit and commit; the next run picks them up.
+
+search:
+  city: Limassol
+  # Bazaraki's "Limassol" is the whole district (incl. mountain villages),
+  # so also limit by straight-line distance from this point (lat, lon).
+  center: [34.690, 33.040]  # between the old town and Neapolis
+  max_distance_km: 10       # ~ Ypsonas to Agios Tychonas
+  bedrooms: [1, 2]          # 0 = studio
+  min_area_m2: 50           # listings without area are kept and flagged
+  min_build_year: 2016      # "less than 10 years old"; unknown year is kept and flagged
+
+  # Two price tiers:
+  #   up to base_max_price            -> any listing that passes the filters above
+  #   base_max_price .. pv_max_price  -> only listings with photovoltaic (PV) panels
+  #                                      for electricity (not just solar water heating)
+  base_max_price: 1300
+  pv_max_price: 1700        # target is 1600, the extra 100 leaves room to negotiate
+
+  # Listings in the PV tier where "solar panels" is mentioned but it's unclear
+  # whether it's PV or a water heater: send them with a "check" mark.
+  send_unclear_solar: true
+
+sources:
+  bazaraki:
+    enabled: true
+    # 3529 = apartments/flats, 681 = houses (to rent)
+    rubrics: [3529, 681]
+  rera:        # rera.cy, JSON API
+    enabled: true
+  homecy:      # home.cy, HTML pages
+    enabled: true
+  indexcy:     # index.cy, HTML + REST; many private ads reposted from Telegram
+    enabled: true
+  # Spitogatos and BuySellCyprus are not supported: both sit behind bot
+  # protection (Imperva / Cloudflare challenge) that blocks plain HTTP clients.
+
+notify:
+  # On the very first run, send matches posted within this many days;
+  # older ones are just marked as seen.
+  initial_backfill_days: 14
+  # Notify when an already-seen listing drops its price into range.
+  price_drops: true
