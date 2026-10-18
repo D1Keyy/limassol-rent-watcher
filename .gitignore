@@ -5,3 +5,4 @@ __pycache__/
 logs/
 # local runs keep their own state; the Actions workflow adds it with -f
 state/
+oracle_ssh_key.pub
